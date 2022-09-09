@@ -159,16 +159,17 @@ class ParallelExec extends BaseTask implements CommandInterface, PrintedInterfac
         $this->startProgressIndicator();
         $running = [];
         $queue = $this->processes;
-        $nextTime = time();
+        $nextTime = microtime(1);
+        $first = true;
         while (true) {
-            if (($nextTime <= time()) && !empty($queue)) {
+            if (($nextTime <= microtime(1)) && !empty($queue)) {
                 $process = array_shift($queue);
                 $process->setIdleTimeout($this->idleTimeout);
                 $process->setTimeout($this->timeout);
                 $process->start();
                 $this->printTaskInfo($process->getCommandLine());
                 $running[] = $process;
-                $nextTime = time() + $this->waitInterval;
+                $nextTime = microtime(1) + $this->waitInterval;
             }
             foreach ($running as $k => $process) {
                 try {
@@ -191,7 +192,13 @@ class ParallelExec extends BaseTask implements CommandInterface, PrintedInterfac
             if (empty($running) && empty($queue)) {
                 break;
             }
-            usleep(1000);
+
+            if ($first) {
+                $first = false;
+                sleep(1);
+            } else {
+                usleep(1000);
+            }
         }
         $this->stopProgressIndicator();
 
